@@ -1,10 +1,34 @@
 local utils = require("WindowChatter.utils")
 local buf_list, win_list, mask_ns_id_list = {}, {}, {}
 
+local masked_regions = {}
+-- table.insert(masked_regions, {start_line = start_line, start_col = start_col, end_line = end_line, end_col = end_col})
+
 local window_heights = {}
+
+
+vim.cmd [[
+highlight MaskHighlight1 guibg=Red
+highlight MaskHighlight2 guibg=Yellow
+highlight MaskHighlight3 guibg=Green
+highlight MaskHighlight4 guibg=Blue
+highlight MaskHighlight5 guibg=Grey
+]]
+
 
 for i = 1, 5 do
     table.insert(mask_ns_id_list, vim.api.nvim_create_namespace('MaskNamespace' .. i))
+end
+
+local function highlight_selection(index, start_line, start_col, end_line, end_col)
+    local highlight_group = "MaskHighlight" .. index  -- Select highlight group based on index
+    vim.api.nvim_buf_clear_namespace(0, mask_ns_id_list[index], 0, -1)
+
+    vim.api.nvim_buf_add_highlight(0, mask_ns_id_list[index], highlight_group, start_line - 1, start_col - 1, end_col)
+    for i = start_line + 1, end_line - 1 do
+        vim.api.nvim_buf_add_highlight(0, mask_ns_id_list[index], highlight_group, i - 1, 0, -1)
+    end
+    vim.api.nvim_buf_add_highlight(0, mask_ns_id_list[index], highlight_group, end_line - 1, 0, end_col)
 end
 
 
@@ -52,17 +76,6 @@ local function create_or_update_window(index, text)
     vim.api.nvim_buf_set_lines(buf_list[index], 0, -1, false, truncated_lines)
 end
 
-local masked_regions = {}
-
-local function highlight_selection(index, start_line, start_col, end_line, end_col)
-    vim.api.nvim_buf_clear_namespace(0, mask_ns_id_list[index], 0, -1)
-
-    vim.api.nvim_buf_add_highlight(0, mask_ns_id_list[index], "MaskHighlight", start_line - 1, start_col - 1, end_col)
-    for i = start_line + 1, end_line - 1 do
-        vim.api.nvim_buf_add_highlight(0, mask_ns_id_list[index], "MaskHighlight", i - 1, 0, -1)
-    end
-    vim.api.nvim_buf_add_highlight(0, mask_ns_id_list[index], "MaskHighlight", end_line - 1, 0, end_col)
-end
 
 local function send_visual_selection_to_window()
     local current_win = vim.api.nvim_get_current_win()
@@ -89,7 +102,21 @@ local function send_visual_selection_to_window()
     vim.api.nvim_win_set_cursor(current_win, current_pos)
 end
 
--- Set up an autocmd to listen for changes
+
+-- Function to update the highlighting of the text region
+local function update_highlight(index, start_line, start_col, end_line, end_col)
+    local highlight_group = "MaskHighlight" .. index
+    vim.api.nvim_buf_clear_namespace(0, mask_ns_id_list[index], 0, -1)
+
+    vim.api.nvim_buf_add_highlight(0, mask_ns_id_list[index], highlight_group, start_line - 1, start_col - 1, end_col)
+    for i = start_line + 1, end_line - 1 do
+        vim.api.nvim_buf_add_highlight(0, mask_ns_id_list[index], highlight_group, i - 1, 0, -1)
+    end
+    vim.api.nvim_buf_add_highlight(0, mask_ns_id_list[index], highlight_group, end_line - 1, 0, end_col)
+end
+
+
+-- Function to update the floating window and the highlight when the text changes
 local function update_window_on_change()
     for i, region in ipairs(masked_regions) do
         local start_line, start_col, end_line, end_col = region.start_line, region.start_col, region.end_line, region.end_col
@@ -98,9 +125,26 @@ local function update_window_on_change()
         lines[1] = string.sub(lines[1], start_col)
         lines[#lines] = string.sub(lines[#lines], 1, end_col)
 
+        -- Update window content
         create_or_update_window(i, lines)
+
+        -- Recalculate end_line and end_col based on changes
+        end_line = start_line + #lines - 1
+        if #lines > 1 then
+            end_col = #lines[#lines]
+        else
+            end_col = start_col + #lines[1]
+        end
+
+        -- Update the highlight region
+        update_highlight(i, start_line, start_col, end_line, end_col)
+
+        -- Update region data to reflect new end_line and end_col
+        region.end_line = end_line
+        region.end_col = end_col
     end
 end
+
 
 vim.cmd([[
     augroup UpdateFloatingWindow
