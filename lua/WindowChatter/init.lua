@@ -23,7 +23,6 @@ local function create_or_update_window(index, text)
         col = vim.o.columns - max_width - 1,
         focusable = true,
         border = "rounded",
-        noautocmd = true
     }
 
     if not buf_list[index] or not vim.api.nvim_buf_is_valid(buf_list[index]) then
@@ -92,11 +91,12 @@ end
 vim.cmd([[
     augroup UpdateFloatingWindow
         autocmd!
-        autocmd TextChanged,TextChangedI <buffer> lua update_window_on_change()
+        autocmd TextChanged,TextChangedI <buffer> lua require("WindowChatter").update_window_on_change()
     augroup END
 ]])
 
 return {
-	send_visual_selection_to_window = send_visual_selection_to_window
+	send_visual_selection_to_window = send_visual_selection_to_window,
+	update_window_on_change = update_window_on_change
 }
 
