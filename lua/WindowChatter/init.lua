@@ -1,9 +1,21 @@
 local utils = require("WindowChatter.utils")
 local buf_list, win_list, mask_ns_id_list = {}, {}, {}
 
+local window_heights = {}
+
 for i = 1, 5 do
     table.insert(mask_ns_id_list, vim.api.nvim_create_namespace('MaskNamespace' .. i))
 end
+
+
+local function calculate_vertical_offset(index)
+    local offset = 1  -- Start with a small offset from the top
+    for i = 1, index - 1 do
+        offset = offset + window_heights[i] + 2  -- Add the height of each window plus a small gap
+    end
+    return offset
+end
+
 
 local function create_or_update_window(index, text)
     local max_height = 10
@@ -14,12 +26,14 @@ local function create_or_update_window(index, text)
     local truncated_lines = utils.truncate_text(text, max_words, max_width)
 
     local height = math.min(#truncated_lines, max_height)
+	window_heights[index] = height  -- Store the height of each window
+
     local opts = {
         style = "minimal",
         relative = "editor",
         width = max_width,
         height = height,
-        row = index * (height + 1),
+        row = calculate_vertical_offset(index),
         col = vim.o.columns - max_width - 1,
         focusable = true,
         border = "rounded",
