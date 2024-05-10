@@ -81,6 +81,7 @@ local function create_or_update_window(index, text)
 
 		if not buf_list[index] or not vim.api.nvim_buf_is_valid(buf_list[index]) then
 			buf_list[index] = vim.api.nvim_create_buf(false, true)
+			vim.api.nvim_command('doautocmd BufEnter')
 		end
 
 		if not win_list[index] or not vim.api.nvim_win_is_valid(win_list[index]) then
