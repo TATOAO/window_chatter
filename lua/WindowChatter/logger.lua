@@ -17,7 +17,12 @@ local function log(...)
     for i, v in ipairs(messages) do
         messages[i] = tostring(v)
     end
-    local message = table.concat(messages, " ") .. "\n"
+
+	local ms = math.floor((os.clock() % 1) * 1000)
+
+    local message = os.date("[%Y-%m-%d %H:%M:%S:").. ms.."]".. table.concat(messages, " ") .. "\n"
+
+
 
     -- Append message to the log file
     local file = io.open(log_file_path, "a")  -- Open the file in append mode
