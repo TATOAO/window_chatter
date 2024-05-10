@@ -1,4 +1,16 @@
-local log_file_path = ".log/"..os.date("%Y-%m-%d")..".log"  -- Change this to the desired path
+local directory = ".log/"
+local log_file_path = directory..os.date("%Y-%m-%d")..".log"  -- Change this to the desired path
+
+local function ensure_log_directory_exists()
+	if vim.fn.isdirectory(directory) == 0 then
+		-- Directory does not exist, so create it
+		vim.fn.mkdir(directory, "p")  -- The "p" flag creates parent directories as needed
+		print("Directory created: " .. directory)
+	else
+		print("Directory already exists: " .. directory)
+	end
+end
+
 
 local function log(...)
     local messages = {...}
@@ -16,6 +28,8 @@ local function log(...)
         error("Failed to open log file")
     end
 end
+
+ensure_log_directory_exists()
 
 return {
 	log = log
