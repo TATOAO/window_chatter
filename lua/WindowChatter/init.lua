@@ -57,38 +57,40 @@ end
 
 
 local function create_or_update_window(index, text)
-    local max_height = 10
-    local max_words = 10
-    local max_width = 40 -- Set the desired fixed width for the window
+	vim.schedule(function ()
+		local max_height = 10
+		local max_words = 10
+		local max_width = 40 -- Set the desired fixed width for the window
 
-    -- Truncate and wrap lines
-    local truncated_lines = utils.truncate_text(text, max_words, max_width)
+		-- Truncate and wrap lines
+		local truncated_lines = utils.truncate_text(text, max_words, max_width)
 
-    local height = math.min(#truncated_lines, max_height)
-	window_heights[index] = height  -- Store the height of each window
+		local height = math.min(#truncated_lines, max_height)
+		window_heights[index] = height  -- Store the height of each window
 
-    local opts = {
-        style = "minimal",
-        relative = "editor",
-        width = max_width,
-        height = height,
-        row = calculate_vertical_offset(index),
-        col = vim.o.columns - max_width - 1,
-        focusable = true,
-        border = "rounded",
-    }
+		local opts = {
+			style = "minimal",
+			relative = "editor",
+			width = max_width,
+			height = height,
+			row = calculate_vertical_offset(index),
+			col = vim.o.columns - max_width - 1,
+			focusable = true,
+			border = "rounded",
+		}
 
-    if not buf_list[index] or not vim.api.nvim_buf_is_valid(buf_list[index]) then
-        buf_list[index] = vim.api.nvim_create_buf(false, true)
-    end
+		if not buf_list[index] or not vim.api.nvim_buf_is_valid(buf_list[index]) then
+			buf_list[index] = vim.api.nvim_create_buf(false, true)
+		end
 
-    if not win_list[index] or not vim.api.nvim_win_is_valid(win_list[index]) then
-        win_list[index] = vim.api.nvim_open_win(buf_list[index], false, opts)
-    else
-        vim.api.nvim_win_set_config(win_list[index], opts)
-    end
+		if not win_list[index] or not vim.api.nvim_win_is_valid(win_list[index]) then
+			win_list[index] = vim.api.nvim_open_win(buf_list[index], false, opts)
+		else
+			vim.api.nvim_win_set_config(win_list[index], opts)
+		end
 
-    vim.api.nvim_buf_set_lines(buf_list[index], 0, -1, false, truncated_lines)
+		vim.api.nvim_buf_set_lines(buf_list[index], 0, -1, false, truncated_lines)
+	end)
 end
 
 
@@ -111,10 +113,13 @@ local function send_visual_selection_to_window()
 
     table.insert(masked_regions, {start_line = start_line, start_col = start_col, end_line = end_line, end_col = end_col})
     highlight_selection(index, start_line, start_col, end_line, end_col)
-    create_or_update_window(index, lines)
 
-    vim.api.nvim_set_current_win(current_win)
-    vim.api.nvim_win_set_cursor(current_win, current_pos)
+	vim.schedule(function()
+		create_or_update_window(index, lines)
+
+		vim.api.nvim_set_current_win(current_win)
+		vim.api.nvim_win_set_cursor(current_win, current_pos)
+	end)
 end
 
 
