@@ -125,10 +125,15 @@ end
 
 
 local function on_lines(_, buf, _, firstline, lastline, new_lastline, _)
-
-	logger.log(buf, firstline, lastline, new_lastline)
+    logger.log('DEBUG', buf, firstline, lastline, new_lastline)
     for i, region in ipairs(masked_regions) do
-        if region.start_line <= firstline and region.end_line >= lastline then
+        -- Check if the change is within the region
+        if region.start_line - 1 <= firstline and region.end_line >= lastline then
+            -- Recalculate the region's start and end if the change impacts the boundaries
+            if firstline < region.start_line - 1 then
+                region.start_line = firstline + 1
+            end
+
             -- Adjust the region end line based on the difference in line changes
             local line_diff = new_lastline - lastline
             region.end_line = region.end_line + line_diff
@@ -152,9 +157,9 @@ local function attach_buffer()
         on_lines = on_lines
     })
     if not attached then
-        logger.log("Failed to attach to buffer", buf)
+        logger.log("INFO", "Failed to attach to buffer", buf)
     else
-        logger.log("Attached to buffer", buf)
+        logger.log("INFO", "Attached to buffer", buf)
     end
 end
 
@@ -170,12 +175,49 @@ local function update_window_on_change()
     end
 end
 
--- vim.cmd([[
---     augroup UpdateFloatingWindow
---         autocmd!
---         autocmd TextChanged,TextChangedI <buffer> lua require("WindowChatter").update_window_on_change()
---     augroup END
--- ]])
+
+local function remove_selected_highlighted_area()
+    local current_win = vim.api.nvim_get_current_win()
+    local cursor_pos = vim.api.nvim_win_get_cursor(current_win)
+    local cursor_line = cursor_pos[1]
+
+    local found_index = nil
+    for i, region in ipairs(masked_regions) do
+        if region.start_line <= cursor_line and region.end_line >= cursor_line then
+            -- Clear the highlight
+            vim.api.nvim_buf_clear_namespace(0, mask_ns_id_list[i], 0, -1)
+
+            -- Close the floating window if it's valid
+            if win_list[i] and vim.api.nvim_win_is_valid(win_list[i]) then
+                vim.api.nvim_win_close(win_list[i], true)
+            end
+
+            -- Mark index for removal to avoid modifying the list during iteration
+            found_index = i
+            break
+        end
+    end
+
+    if found_index then
+        -- Remove from tracking arrays
+        table.remove(masked_regions, found_index)
+        table.remove(win_list, found_index)
+        table.remove(buf_list, found_index)
+        table.remove(mask_ns_id_list, found_index)
+        table.remove(window_heights, found_index)
+
+        -- Adjust remaining namespace IDs if necessary (recreate namespaces if their IDs are dynamic)
+        for i = found_index, #mask_ns_id_list do
+            -- Assuming namespaces need adjustment; recreate or reset namespaces if required
+            mask_ns_id_list[i] = vim.api.nvim_create_namespace('MaskNamespace' .. i)
+        end
+
+        print("Removed highlighted area and corresponding window.")
+    else
+        print("No highlighted area found at the cursor position.")
+    end
+end
+
 
 
 vim.cmd([[
@@ -189,6 +231,7 @@ return {
 	send_visual_selection_to_window = send_visual_selection_to_window,
 	update_window_on_change = update_window_on_change,
 	on_lines = on_lines,
-	attach_buffer = attach_buffer
+	attach_buffer = attach_buffer,
+	remove_selected_highlighted_area = remove_selected_highlighted_area
 }
 
