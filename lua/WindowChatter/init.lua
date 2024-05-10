@@ -1,4 +1,5 @@
 local utils = require("WindowChatter.utils")
+local logger = require("WindowChatter.logger")
 local buf_list, win_list, mask_ns_id_list = {}, {}, {}
 
 local masked_regions = {}
@@ -119,7 +120,7 @@ end
 
 local function on_lines(_, buf, _, firstline, lastline, new_lastline, _)
 
-	print(buf, firstline, lastline, new_lastline)
+	logger.log(buf, firstline, lastline, new_lastline)
     for i, region in ipairs(masked_regions) do
         if region.start_line <= firstline and region.end_line >= lastline then
             -- Adjust the region end line based on the difference in line changes
@@ -141,12 +142,15 @@ end
 -- Attach the listener to each buffer when needed
 local function attach_buffer()
     local buf = vim.api.nvim_get_current_buf()
-    vim.api.nvim_buf_attach(buf, false, {
+    local attached = vim.api.nvim_buf_attach(buf, false, {
         on_lines = on_lines
     })
+    if not attached then
+        logger.log("Failed to attach to buffer", buf)
+    else
+        logger.log("Attached to buffer", buf)
+    end
 end
-
-
 
 
 
@@ -160,12 +164,12 @@ local function update_window_on_change()
     end
 end
 
-vim.cmd([[
-    augroup UpdateFloatingWindow
-        autocmd!
-        autocmd TextChanged,TextChangedI <buffer> lua require("WindowChatter").update_window_on_change()
-    augroup END
-]])
+-- vim.cmd([[
+--     augroup UpdateFloatingWindow
+--         autocmd!
+--         autocmd TextChanged,TextChangedI <buffer> lua require("WindowChatter").update_window_on_change()
+--     augroup END
+-- ]])
 
 
 vim.cmd([[
