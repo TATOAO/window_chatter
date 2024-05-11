@@ -56,6 +56,21 @@ local function calculate_vertical_offset(index)
 end
 
 
+local function find_smallest_unused_index()
+    local used_indices = {}
+    for _, region in ipairs(masked_regions) do
+        used_indices[region.index] = true
+    end
+
+    for i = 1, 5 do
+        if not used_indices[i] then
+            return i
+        end
+    end
+
+    return nil  -- Return nil if all indices are used
+end
+
 local function create_or_update_window(index, text)
 	vim.schedule(function ()
 		local max_height = 10
@@ -79,17 +94,20 @@ local function create_or_update_window(index, text)
 			border = "rounded",
 		}
 
+		-- If the buffer index doesn't exist or is not valid
 		if not buf_list[index] or not vim.api.nvim_buf_is_valid(buf_list[index]) then
 			buf_list[index] = vim.api.nvim_create_buf(false, true)
 			vim.api.nvim_command('doautocmd BufEnter')
 		end
 
+		-- If the window doesn't exist or is not valid
 		if not win_list[index] or not vim.api.nvim_win_is_valid(win_list[index]) then
 			win_list[index] = vim.api.nvim_open_win(buf_list[index], false, opts)
 		else
 			vim.api.nvim_win_set_config(win_list[index], opts)
 		end
 
+		-- modified buffer text
 		vim.api.nvim_buf_set_lines(buf_list[index], 0, -1, false, truncated_lines)
 	end)
 end
@@ -106,7 +124,7 @@ local function send_visual_selection_to_window()
     lines[1] = string.sub(lines[1], start_col)
     lines[#lines] = string.sub(lines[#lines], 1, end_col)
 
-    local index = #masked_regions + 1
+    local index = find_smallest_unused_index() 
     if index > 5 then
         print("Maximum number of selection boxes reached.")
         return
