@@ -58,11 +58,14 @@ end
 
 local function find_smallest_unused_index()
     local used_indices = {}
+
+	logger.log("INFO", "masked_regions", masked_regions)
     for _, region in ipairs(masked_regions) do
         used_indices[region.index] = true
     end
 
     for i = 1, 5 do
+		logger.log("INFO", i, used_indices[i])
         if not used_indices[i] then
             return i
         end
