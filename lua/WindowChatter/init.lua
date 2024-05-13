@@ -248,6 +248,21 @@ vim.cmd([[
     augroup END
 ]])
 
+
+
+
+vim.api.nvim_create_user_command('TestAPI', function()
+    local message = "hi who are you"
+    require('WindowChatter.api_integration').send_request(message, function(result, err)
+        if err then
+            print("Error: " .. err)
+        else
+            print("API Response: " .. vim.inspect(result))
+        end
+    end)
+end, {})
+
+
 return {
 	send_visual_selection_to_window = send_visual_selection_to_window,
 	update_window_on_change = update_window_on_change,
