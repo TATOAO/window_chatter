@@ -1,5 +1,18 @@
 local utils = require("WindowChatter.utils")
 local logger = require("WindowChatter.logger")
+
+
+---------------------- add checkhealth methods --------------------------------
+-------------------------------------------------------------------------------
+local health = require('WindowChatter.health')
+
+vim.api.nvim_create_user_command('WindowChatterCheckHealth', function()
+  health.check()
+end, {})
+-------------------------------------------------------------------------------
+
+
+
 local buf_list, win_list, mask_ns_id_list = {}, {}, {}
 
 local masked_regions = {}
@@ -144,7 +157,6 @@ local function send_visual_selection_to_window()
 	end)
 end
 
-
 local function on_lines(_, buf, _, firstline, lastline, new_lastline, _)
     logger.log('DEBUG', buf, firstline, lastline, new_lastline)
     for i, region in ipairs(masked_regions) do
@@ -247,20 +259,6 @@ vim.cmd([[
         autocmd BufEnter * lua require('WindowChatter').attach_buffer()
     augroup END
 ]])
-
-
-
-
-vim.api.nvim_create_user_command('TestAPI', function()
-    local message = "hi who are you"
-    require('WindowChatter.api_integration').send_request(message, function(result, err)
-        if err then
-            print("Error: " .. err)
-        else
-            print("API Response: " .. vim.inspect(result))
-        end
-    end)
-end, {})
 
 
 return {
