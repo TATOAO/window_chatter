@@ -5,6 +5,8 @@ local Utils = require('WindowChatter.utils')
 
 local M = {}
 
+
+
 function M.display_output(output, window_id)
     -- Display output in a specified window or a new window if window_id is nil
     if window_id and WindowManager.exists(window_id) then

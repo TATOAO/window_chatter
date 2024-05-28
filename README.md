@@ -86,7 +86,7 @@ README.md
 ### Cross Functional Flowchart
 
 v1
-<img src="./neovim_plugin_window_chatter.drawio.svg" alt="Image Failed" width="700">
+<img src="./neovim_plugin_window_chatter1.svg" alt="Image Failed" width="700">
 
 
 

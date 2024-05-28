@@ -11,6 +11,9 @@ function M.check()
     health.report_error('curl is not installed')
   end
 
+
+  -- TODO check llm is connected
+
   -- Check for configuration issues
   -- if vim.g.myplugin_config then
   --   health.report_ok('Configuration found')
