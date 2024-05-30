@@ -14,7 +14,7 @@ local function create_floating_window(content, position)
     local row = position.row or math.ceil((height - win_height) / 2)
     local col = position.col or math.ceil((width - win_width) / 2)
 
-    local buf = vim.api.nvim_create_buf(false, true) -- Create a new buffer for the window
+	local buf = vim.api.nvim_create_buf(false, true) -- Create a new buffer for the window
     local win_id = vim.api.nvim_open_win(buf, true, {
         relative = 'editor',
         width = win_width,
