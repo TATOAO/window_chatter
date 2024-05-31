@@ -1,5 +1,9 @@
 local M = {}
 
+local selection_manager = require("WindowChatter.selection_manager")
+
+
+
 -- windows[id] = {buf = buf, win_id = win_id}
 local windows = {}
 
@@ -43,8 +47,11 @@ function M.create_window(id, content, position)
     windows[id] = {buf = buf, win_id = win_id}
 end
 
-function M.update_window(id, new_content)
+function M.update_window(setid)
     -- Update the content of an existing window
+	local visual_selection_set = selection_manager.getVisualSelectionsBySetId(setid)
+
+	
     local window = windows[id]
     if not window then
         error("No window with ID: " .. id)

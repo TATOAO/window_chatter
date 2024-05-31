@@ -84,6 +84,9 @@ function selectionManager.removeVisualSelectionSet(setId)
     end
 end
 
+
+
+
 return selectionManager
 
 
