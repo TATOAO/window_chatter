@@ -1,2 +1,4 @@
-local win = require("../lua/WindowChatter/selection_manager")
+local selectionManager = require('lua.WindowChatter.selection_manager')
+
+
 

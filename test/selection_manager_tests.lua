@@ -1,0 +1,58 @@
+require("busted.runner")()
+local selectionManager = require("lua.WindowChatter.selection_manager")
+
+describe("Visual Selection Manager", function()
+	describe("Selection Set Management", function()
+		it("creates a visual selection set", function()
+			local setId = selectionManager.createVisualSelectionSet()
+			assert.are.equal(1, setId)
+		end)
+
+		it("records a visual selection", function()
+			local setId = selectionManager.createVisualSelectionSet()
+			selectionManager.recordVisualSelection(setId, "example.lua", 1, 1, 1, 10)
+			local selection = selectionManager.getVisualSelectionsBySetId(setId)
+			assert.are_not_nil(selection)
+			assert.are.same(
+				{ fileName = "example.lua", start_point = { line = 1, col = 1 }, end_point = { line = 1, col = 10 } },
+				selection.selections[1]
+			)
+		end)
+
+		it("saves and loads visual selection sets", function()
+			selectionManager.createVisualSelectionSet()
+			selectionManager.recordVisualSelection(1, "test.lua", 5, 3, 5, 8)
+			selectionManager.saveVisualSelectionSets()
+			selectionManager.loadVisualSelectionSets()
+			local selections = selectionManager.getVisualSelectionsBySetId(1)
+			assert.are.same("test.lua", selections.selections[1].fileName)
+		end)
+
+		it("cycles through selection set IDs", function()
+			selectionManager.createVisualSelectionSet()
+			selectionManager.createVisualSelectionSet()
+			local firstId = selectionManager.getCurrentSetId()
+			local nextId = selectionManager.getNextSetId()
+
+			print(firstId, nextId)
+			assert.are_not.equal(firstId, nextId)
+			assert.are.equal(firstId, selectionManager.getNextSetId())
+		end)
+
+		it("removes a visual selection", function()
+			local setId = selectionManager.createVisualSelectionSet()
+			selectionManager.recordVisualSelection(setId, "remove_test.lua", 1, 1, 1, 10)
+			assert.are.equal(1, #selectionManager.getVisualSelectionsBySetId(setId).selections)
+			selectionManager.removeVisualSelection(setId, 1)
+			assert.are.equal(0, #selectionManager.getVisualSelectionsBySetId(setId).selections)
+		end)
+
+		it("removes a visual selection set", function()
+			local setId = selectionManager.createVisualSelectionSet()
+			selectionManager.createVisualSelectionSet()
+			assert.are.equal(2, #selectionManager.selectionSets)
+			selectionManager.removeVisualSelectionSet(setId)
+			assert.are.equal(1, #selectionManager.selectionSets)
+		end)
+	end)
+end)
