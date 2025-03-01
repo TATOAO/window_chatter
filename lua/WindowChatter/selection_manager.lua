@@ -2,17 +2,16 @@ local selectionManager = {}
 
 -- Table to store all visual selection sets
 selectionManager.selectionSets = {}
--- selectionWorkplace of IDs rather than just the indices.
 selectionManager.currentSetId = 1
 
--- Create a new visual selection set
+-- Function to create a new visual selection set
 function selectionManager.createVisualSelectionSet()
     local setId = #selectionManager.selectionSets + 1
     selectionManager.selectionSets[setId] = { id = setId, selections = {} }
     return setId
 end
 
--- Record a visual selection into a set
+-- Function to record a visual selection into a set
 function selectionManager.recordVisualSelection(setId, fileName, startLine, startCol, endLine, endCol)
     local set = selectionManager.selectionSets[setId]
     if not set then
@@ -20,42 +19,43 @@ function selectionManager.recordVisualSelection(setId, fileName, startLine, star
     end
     table.insert(set.selections, {
         fileName = fileName,
-        start_point = { line = startLine, col = startCol },
-        end_point = { line = endLine, col = endCol }
+        start = { line = startLine, col = startCol },
+        end = { line = endLine, col = endCol }
     })
 end
 
--- Save the visual selection sets to a file
+-- Function to save the visual selection sets to a file
 function selectionManager.saveVisualSelectionSets()
-    local filePath = vim.fn.stdpath('data') .. '/visual_selection_sets.txt'
+    local filePath = vim.fn.stdpath('data') .. '/visual_selection_sets.json'
     local file = io.open(filePath, 'w')
     if file then
-        file:write(vim.inspect(selectionManager.selectionSets))
+        file:write(vim.fn.json_encode(selectionManager.selectionSets))
         file:close()
     end
 end
 
--- Load the visual selection sets from a file
+-- Function to load the visual selection sets from a file
 function selectionManager.loadVisualSelectionSets()
-    local filePath = vim.fn.stdpath('data') .. '/visual_selection_sets.txt'
+    local filePath = vim.fn.stdpath('data') .. '/visual_selection_sets.json'
     local file = io.open(filePath, 'r')
     if file then
         local data = file:read('*a')
-        selectionManager.selectionSets = vim.inspect.decode(data)
+        selectionManager.selectionSets = vim.fn.json_decode(data)
+        file:close()
     end
 end
 
--- Get visual selections by the set ID
+-- Function to get visual selections by the set ID
 function selectionManager.getVisualSelectionsBySetId(setId)
     return selectionManager.selectionSets[setId]
 end
 
--- Get the current visual selection set ID
+-- Function to get the current visual selection set ID
 function selectionManager.getCurrentSetId()
     return selectionManager.currentSetId
 end
 
--- Get the next visual selection set ID (cycling through sets)
+-- Function to get the next visual selection set ID (cycling through sets)
 function selectionManager.getNextSetId()
     local nextId = selectionManager.currentSetId + 1
     if nextId > #selectionManager.selectionSets then
@@ -65,7 +65,7 @@ function selectionManager.getNextSetId()
     return nextId
 end
 
--- Remove a visual selection from a set
+-- Function to remove a visual selection from a set
 function selectionManager.removeVisualSelection(setId, selectionIndex)
     local set = selectionManager.selectionSets[setId]
     if set and set.selections[selectionIndex] then
@@ -73,7 +73,7 @@ function selectionManager.removeVisualSelection(setId, selectionIndex)
     end
 end
 
--- Remove a visual selection set and adjust the current set ID if necessary
+-- Function to remove a visual selection set and adjust the current set ID if necessary
 function selectionManager.removeVisualSelectionSet(setId)
     if selectionManager.selectionSets[setId] then
         table.remove(selectionManager.selectionSets, setId)
@@ -84,9 +84,61 @@ function selectionManager.removeVisualSelectionSet(setId)
     end
 end
 
+-- Function to find visual selections by file name, starting points, and ending points
+function selectionManager.findVisualSelections(fileName, startLine, startCol, endLine, endCol)
+    local result = {}
+    for _, set in ipairs(selectionManager.selectionSets) do
+        for _, selection in ipairs(set.selections) do
+            if selection.fileName == fileName and
+               ((selection.start.line >= startLine and selection.start.line <= endLine) or
+                (selection.end.line >= startLine and selection.end.line <= endLine) or
+                (selection.start.line < startLine and selection.end.line > endLine)) then
+                table.insert(result, selection)
+            end
+        end
+    end
+    return result
+end
 
+-- Function to update selections based on text modifications
+local function updateSelections(buffer, startLine, oldEndLine, newEndLine)
+    local lineDiff = newEndLine - oldEndLine
+    for _, set in ipairs(selectionManager.selectionSets) do
+        for _, selection in ipairs(set.selections) do
+            if selection.fileName == vim.api.nvim_buf_get_name(buffer) then
+                if selection.start.line > startLine then
+                    selection.start.line = selection.start.line + lineDiff
+                    selection.end.line = selection.end.line + lineDiff
+                elseif selection.end.line > startLine then
+                    selection.end.line = selection.end.line + lineDiff
+                end
+            end
+        end
+    end
+end
 
+-- on_lines callback function
+local function on_lines(_, buffer, _, firstline, lastline, new_lastline, _, _, _)
+    updateSelections(buffer, firstline, lastline, new_lastline)
+end
+
+-- Attach the listener to each buffer when needed
+local function attach_buffer()
+    local buf = vim.api.nvim_get_current_buf()
+    local attached = vim.api.nvim_buf_attach(buf, false, {
+        on_lines = on_lines
+    })
+    if not attached then
+        print("Failed to attach to buffer", buf)
+    else
+        print("Attached to buffer", buf)
+    end
+end
+
+-- Attach the buffer when opening a file
+vim.api.nvim_create_autocmd("BufReadPost", {
+    callback = attach_buffer
+})
 
 return selectionManager
-
 
