@@ -17,8 +17,7 @@ Secondly, define "visual selections set":
 3. The visual selection sets have an order. 
 
 
-
-Thirdly, implement the following methods:
+Finally, implement the following methods:
 1. create a visual selection set.
 2. records a visual selection positions into a "set"
 3. save the visual selections sets into a place that enables the "records" to be stored (will not be lost when exits Neovim)
@@ -28,6 +27,7 @@ Thirdly, implement the following methods:
 7. get the next visual selection set ID (it should be cycling).
 8. remove a visual selection in a selection set.
 9. remove a visual selection set and preserve the order between other selection sets. 
+10. find the selections across all sets that affacted by a given rigion k
 10. a function that utilize git, update all the visual selection in all sets according to the git diff. This funciton is expected to run when the user execute a "save".
 
 
